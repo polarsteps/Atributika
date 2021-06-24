@@ -456,6 +456,28 @@ class AtributikaTests: XCTestCase {
         XCTAssertEqual(tags[0].tag.attributes["target"], "")
         XCTAssertEqual(tags[0].tag.attributes["href"], "http://foo.com")
     }
+
+    func testSelfClosingTagAttributes() {
+        let test = "Hello <img href=\"http://foo.com/image.jpg\"/>!"
+
+        let (string, tags) = test.detectTags()
+
+        XCTAssertEqual(string, "Hello !")
+
+        XCTAssertEqual(tags[0].tag.name, "img")
+        XCTAssertEqual(tags[0].tag.attributes["href"], "http://foo.com/image.jpg")
+    }
+
+    func testInnerSelfClosingTagAttributes() {
+        let test = "Hello <b>bold<img href=\"http://foo.com/image.jpg\"/>!</b>"
+
+        let (string, tags) = test.detectTags()
+
+        XCTAssertEqual(string, "Hello bold!")
+
+        XCTAssertEqual(tags[0].tag.name, "img")
+        XCTAssertEqual(tags[0].tag.attributes["href"], "http://foo.com/image.jpg")
+    }
     
     func testTagAttributesWithSingleQuote() {
         let test = "Hello <a class='big' target='' href=\"http://foo.com\">world</a>!"
@@ -588,6 +610,104 @@ class AtributikaTests: XCTestCase {
         let reference = NSMutableAttributedString(string: "Monday - Friday: 8:00 - 19:00")
         reference.addAttributes([AttributedStringKey.foregroundColor: hexStringToUIColor(hex: "#6cc299")], range: NSMakeRange(16, 13))
         XCTAssertEqual(test, reference)
+    }
+    
+    func testHrefTuner() {
+        
+        let a = Style("a")
+        
+        let test = "<a href=\"https://github.com/psharanda/Atributika\">link</a>".style(tags: a, tuner: { style, tag in
+            if tag.name == a.name {
+                if let link = tag.attributes["href"] {
+                    return style.link(URL(string: link)!)
+                }
+            }
+            return style
+        }).attributedString
+        
+        let reference = NSMutableAttributedString(string: "link")
+        reference.addAttributes([AttributedStringKey.link: URL(string: "https://github.com/psharanda/Atributika")!], range: NSMakeRange(0, 4))
+        XCTAssertEqual(test, reference)
+    }
+    
+    func testHTMLComment() {
+        let test = "Hello <!--This is a comment. Comments are erased by Atributika-->world!"
+        
+        let (string, tags) = test.detectTags()
+        
+        
+        XCTAssertEqual(string, "Hello world!")
+        XCTAssertEqual(tags.count, 0)
+    }
+    
+    func testHTMLComment2() {
+        let test = "Hello <!---->world!"
+        
+        let (string, tags) = test.detectTags()
+        
+        
+        XCTAssertEqual(string, "Hello world!")
+        XCTAssertEqual(tags.count, 0)
+    }
+    
+    func testBrokenHTMLComment() {
+        let test = "Hello <!-This is a comment. Comments are erased by Atributika-->world!"
+        
+        let (string, tags) = test.detectTags()
+        
+        
+        XCTAssertEqual(string, test)
+        XCTAssertEqual(tags.count, 0)
+    }
+    
+    func testBrokenHTMLComment2() {
+        let test = "Hello <!"
+        
+        let (string, tags) = test.detectTags()
+        
+        
+        XCTAssertEqual(string, test)
+        XCTAssertEqual(tags.count, 0)
+    }
+    
+    func testBrokenHTMLComment3() {
+        let test = "Hello <!"
+        
+        let (string, tags) = test.detectTags()
+        
+        
+        XCTAssertEqual(string, test)
+        XCTAssertEqual(tags.count, 0)
+    }
+    
+    func testBrokenHTMLComment4() {
+        let test = "Hello <!--"
+        
+        let (string, tags) = test.detectTags()
+        
+        
+        XCTAssertEqual(string, test)
+        XCTAssertEqual(tags.count, 0)
+    }
+    
+    func testBrokenHTMLComment5() {
+        let test = "Hello <!--This is a comment. Comments are erased by Atributika-d->world!"
+        
+        let (string, tags) = test.detectTags()
+        
+        
+        XCTAssertEqual(string, test)
+        XCTAssertEqual(tags.count, 0)
+    }
+    
+    func testBrokenHTMLComment6() {
+        let test = "Hello <!--f"
+        
+        let (string, tags) = test.detectTags()
+        
+        
+        XCTAssertEqual(string, test)
+        XCTAssertEqual(tags.count, 0)
     }
 }
 

@@ -54,6 +54,18 @@ func stringWithLink() -> NSAttributedString {
     return str
 }
 
+func stringWithBoldItalic() -> NSAttributedString {
+    
+    let baseFont = UIFont.systemFont(ofSize: 12)
+    let descriptor = baseFont.fontDescriptor.withSymbolicTraits([.traitItalic, .traitBold])
+    let font = descriptor.map { UIFont(descriptor: $0, size: baseFont.pointSize) } ?? baseFont
+    
+    let a = Style("a").font(font).foregroundColor(.blue)
+    let str = "<a href=\"https://en.wikipedia.org/wiki/World_of_Dance_(TV_series)\" target=\"_blank\">World of Dance</a>".style(tags: a)
+        .attributedString
+    return str
+}
+
 func stringWithManyDetectables() -> NSAttributedString {
     
     let links = Style.foregroundColor(.blue)
@@ -139,6 +151,23 @@ func stringWithUnorderedList() -> NSAttributedString {
         .attributedString
 }
 
+func stringWithOrderedList() -> NSAttributedString {
+    var counter = 0
+    let transformers: [TagTransformer] = [
+        TagTransformer.brTransformer,
+        TagTransformer(tagName: "ol", tagType: .start) { _ in
+            counter = 0
+            return ""
+        },
+        TagTransformer(tagName: "li", tagType: .start) { _ in
+            counter += 1
+            return "\(counter > 1 ? "\n" : "")\(counter). "
+        }
+    ]
+    
+    return "<ol><li>Coffee</li><li>Tea</li><li>Milk</li></ol>".style(tags: [], transformers: transformers).attributedString
+}
+
 func stringWithHref() -> NSAttributedString {
     return "Hey\r\n<a style=\"text-decoration:none\" href=\"http://www.google.com\">Hello\r\nWorld</a>s".style(tags:
         Style("a").font(.boldSystemFont(ofSize: 45)).foregroundColor(.red)
@@ -220,6 +249,39 @@ func stringWithColors() -> NSAttributedString {
     return str
 }
 
+func stringWithParagraph() -> NSAttributedString {
+    let p = Style("p").font(UIFont(name: "HelveticaNeue", size: 20)!)
+    let strong = Style("strong").font(UIFont(name: "Copperplate", size: 20)!)
+    let str = "<p>some string... <strong> string</strong></p>".style(tags: [p,strong]).attributedString
+    return str
+}
+
+func stringWithIndentedList() -> NSAttributedString {
+    let bullet = "• "
+    let transformers: [TagTransformer] = [
+        TagTransformer.brTransformer,
+        TagTransformer(tagName: "li", tagType: .start, replaceValue: bullet),
+        TagTransformer(tagName: "li", tagType: .end, replaceValue: "\n")
+    ]
+
+    let listItemFont = UIFont.systemFont(ofSize: 12)
+    let indentation: CGFloat = (bullet as NSString).size(withAttributes: [NSAttributedStringKey.font: listItemFont]).width
+
+    let paragraphStyle = NSMutableParagraphStyle()
+    paragraphStyle.tabStops = [NSTextTab(textAlignment: .left, location: indentation, options: [NSTextTab.OptionKey: Any]())]
+    paragraphStyle.defaultTabInterval = indentation
+    paragraphStyle.headIndent = indentation
+
+    let li = Style("li")
+        .font(listItemFont)
+        .paragraphStyle(paragraphStyle)
+
+    return "TODO:<br><li>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras a mollis mauris. Cras non mauris nisi. Ut turpis tellus, pretium sed erat eu, consectetur volutpat nisl. Praesent at bibendum ante</li><li>Vestibulum ornare dui ut orci congue placerat. Cras a mollis mauris. Cras non mauris nisi. Ut turpis tellus, pretium sed erat eu, consectetur volutpat nisl. Praesent at bibendum ante</li><li>Nunc et tortor vulputate, elementum quam at, tristique nibh. Cras a mollis mauris. Cras non mauris nisi. Ut turpis tellus, pretium sed erat eu, consectetur volutpat nisl. Praesent at bibendum ante</li>"
+        .style(tags: li, transformers: transformers)
+        .styleAll(Style.font(.boldSystemFont(ofSize: 14)))
+        .attributedString
+}
+
 func allSnippets() -> [NSAttributedString] {
     return [
         stringWithAtributikaLogo(),
@@ -227,17 +289,21 @@ func allSnippets() -> [NSAttributedString] {
         stringWithHashTagAndMention(),
         stringWithPhone(),
         stringWithLink(),
+        stringWithBoldItalic(),
         stringWithManyDetectables(),
         stringWith3Tags(),
         stringWithGrams(),
         stringWithStrong(),
         stringWithTagAndHashtag(),
         stringWithUnorderedList(),
+        stringWithOrderedList(),
         stringWithHref(),
         stringWithBoldItalicUnderline(),
         stringWithImage(),
         stringWithStrikethrough(),
-        stringWithColors()
+        stringWithColors(),
+        stringWithParagraph(),
+        stringWithIndentedList()
     ]
 }
 
